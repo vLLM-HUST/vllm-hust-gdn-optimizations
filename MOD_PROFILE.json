@@ -1,0 +1,14 @@
+{
+  "schema_version": "vllm-hust/repository-profile/v1",
+  "repository": "vLLM-HUST/vllm-hust-gdn-optimizations",
+  "maintainers": [
+    {
+      "login": "ShuhaoZhangTony",
+      "name": "Shuhao Zhang (Tony)"
+    }
+  ],
+  "advisors": [],
+  "default_enabled": false,
+  "lifecycle": "experimental",
+  "canonical_catalog": "https://vllm-hust.sage.org.ai/plugins.html"
+}
