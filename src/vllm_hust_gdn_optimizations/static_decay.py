@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import functools
+import importlib
 import inspect
 import os
 
@@ -31,10 +32,15 @@ def install() -> dict:
         return _STATE
 
     import torch
-    from vllm_ascend.device import device_op
-    from vllm_ascend.ops.gdn import AscendGatedDeltaNetAttention
-    from vllm_ascend.ops.triton import fused_gdn_gating as native
-    from vllm_ascend.worker.worker import NPUWorker
+
+    # Completing the worker module first follows the Host's initialization
+    # order and avoids device_op <-> fused_moe circular imports at CLI startup.
+    NPUWorker = importlib.import_module("vllm_ascend.worker.worker").NPUWorker
+    device_op = importlib.import_module("vllm_ascend.device.device_op")
+    AscendGatedDeltaNetAttention = importlib.import_module(
+        "vllm_ascend.ops.gdn"
+    ).AscendGatedDeltaNetAttention
+    native = importlib.import_module("vllm_ascend.ops.triton.fused_gdn_gating")
 
     from . import kernels
 
