@@ -33,6 +33,11 @@ the fixed model and tensor-parallel profile recorded by the benchmark run.
 Unknown selectors, the blocked Native delayed selector, changed Host sources,
 and changed weight/state storage all fail closed.
 
+Selected workers emit `VLLM_HUST_GDN_RECEIPT` JSON records when hooks install,
+the immutable coefficient cache is prepared, and the candidate kernel first
+executes. Benchmark custody must retain these records separately for every
+rank.
+
 ## Compatibility check
 
 The current source contract is pinned to `vLLM-HUST/vllm-ascend-hust` commit
