@@ -9,6 +9,6 @@
   ],
   "advisors": [],
   "default_enabled": false,
-  "lifecycle": "experimental",
+  "lifecycle": "retest_pending",
   "canonical_catalog": "https://vllm-hust.sage.org.ai/plugins.html"
 }
