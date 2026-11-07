@@ -5,12 +5,36 @@ from __future__ import annotations
 import functools
 import importlib
 import inspect
+import json
+import logging
 import os
 
 from .cache import DecayCache
 from .contracts import HOST_REVISION, AdmissionError, verify_file
 
 _STATE = None
+_EMITTED_EVENTS: set[tuple[int, str]] = set()
+_LOGGER = logging.getLogger(__name__)
+
+
+def _state_receipt(state: dict) -> dict:
+    cache = state["cache"]
+    return {
+        key: value
+        for key, value in state.items()
+        if key not in {"cache", "worker", "pid"}
+    } | {"installed": True, "cache": cache.receipt() if cache else None}
+
+
+def _emit_receipt_once(event: str, state: dict) -> None:
+    """Emit one machine-readable custody record per worker and event."""
+    key = (os.getpid(), event)
+    if key in _EMITTED_EVENTS:
+        return
+    _EMITTED_EVENTS.add(key)
+    payload = _state_receipt(state)
+    payload.update({"event": event, "pid": os.getpid(), "selector": "static-decay"})
+    _LOGGER.warning("VLLM_HUST_GDN_RECEIPT %s", json.dumps(payload, sort_keys=True))
 
 
 def _positive_int(name: str) -> int:
@@ -102,6 +126,7 @@ def install() -> dict:
             if cache is None:
                 raise AdmissionError("GDN gate ran before coefficient preparation")
             state["candidate_calls"] += 1
+            _emit_receipt_once("candidate-exercised", state)
             return kernels.fused_gdn_gating(
                 cache.lookup(a_log), a, b, bias, beta, threshold
             )
@@ -148,6 +173,7 @@ def install() -> dict:
         torch.npu.synchronize()
         state["cache"] = cache
         state["worker"] = worker
+        _emit_receipt_once("cache-prepared", state)
         return result
 
     @functools.wraps(original_execute)
@@ -177,15 +203,11 @@ def install() -> dict:
         if hasattr(NPUWorker, name):
             setattr(NPUWorker, name, immutable)
     _STATE = state
+    _emit_receipt_once("hooks-installed", state)
     return state
 
 
 def receipt() -> dict:
     if _STATE is None:
         return {"installed": False, "host_revision": HOST_REVISION}
-    cache = _STATE["cache"]
-    return {
-        key: value
-        for key, value in _STATE.items()
-        if key not in {"cache", "worker", "pid"}
-    } | {"installed": True, "cache": cache.receipt() if cache else None}
+    return _state_receipt(_STATE)
