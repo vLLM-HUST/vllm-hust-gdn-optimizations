@@ -125,11 +125,12 @@ def install() -> dict:
             cache = state["cache"]
             if cache is None:
                 raise AdmissionError("GDN gate ran before coefficient preparation")
-            state["candidate_calls"] += 1
-            _emit_receipt_once("candidate-exercised", state)
-            return kernels.fused_gdn_gating(
+            result = kernels.fused_gdn_gating(
                 cache.lookup(a_log), a, b, bias, beta, threshold
             )
+            state["candidate_calls"] += 1
+            _emit_receipt_once("candidate-exercised", state)
+            return result
         state["native_calls"] += 1
         state["unsupported_native_calls"] += 1
         return original_gate(a_log, a, b, bias, beta, threshold)
